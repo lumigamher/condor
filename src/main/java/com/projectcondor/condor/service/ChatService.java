@@ -30,7 +30,7 @@ public class ChatService {
         message.setFromAI(false);
         messageRepository.save(message);
 
-        String aiResponse = openAIService.generateChatResponse(message.getContent());
+        String aiResponse = openAIService.getResponse(message.getContent());
         Message aiMessage = new Message();
         aiMessage.setUser(user);
         aiMessage.setContent(aiResponse);

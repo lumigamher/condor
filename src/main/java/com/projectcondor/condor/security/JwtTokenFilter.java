@@ -21,9 +21,9 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService; // Inyectamos el servicio UserDetailsService
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws IOException, ServletException {
+    protected void doFilterInternal(@SuppressWarnings("null") HttpServletRequest request,
+                                    @SuppressWarnings("null") HttpServletResponse response,
+                                    @SuppressWarnings("null") FilterChain filterChain) throws IOException, ServletException {
         String token = getJwtFromRequest(request);
 
         if (token != null && jwtTokenProvider.validateToken(token)) {
