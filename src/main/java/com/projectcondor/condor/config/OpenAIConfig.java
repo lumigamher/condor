@@ -11,15 +11,11 @@ public class OpenAIConfig {
     @Value("${openai.api.key}")
     private String openaiApiKey;
 
-    @Value("${openai.account}")
-    private String openaiAccount;
-
     @Bean
     RestTemplate restTemplate() {
         RestTemplate restTemplate = new RestTemplate();
         restTemplate.getInterceptors().add((request, body, execution) -> {
-            request.getHeaders().add("Authorization", "Bearer " + openaiApiKey);
-            request.getHeaders().add("OpenAI-Account", openaiAccount);
+            request.getHeaders().add("Authorization", "Bearer " + openaiApiKey);  // Agregar solo el encabezado de la API Key
             return execution.execute(request, body);
         });
         return restTemplate;
