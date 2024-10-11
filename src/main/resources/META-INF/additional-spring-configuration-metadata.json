@@ -28,5 +28,10 @@
     "name": "openai.api.url",
     "type": "java.lang.String",
     "description": "A description for 'openai.api.url'"
+  },
+  {
+    "name": "openai.default.prompt",
+    "type": "java.lang.String",
+    "description": "A description for 'openai.default.prompt'"
   }
 ]}

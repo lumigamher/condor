@@ -1,51 +1,78 @@
 package com.projectcondor.condor.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class OpenAIService {
 
-    @Value("${openai.api.key}")
-    private String apiKey;
-
-    @Value("${openai.model}")
-    private String model;
+    private final RestTemplate restTemplate;
 
     @Value("${openai.api.url}")
     private String apiUrl;
 
-    @Autowired
-    private RestTemplate restTemplate;
+    @Value("${openai.model}")
+    private String defaultModel;
 
-    public String getResponse(String prompt) {
-        // Configurar los encabezados
+    @Value("${openai.default.prompt}")
+    private String defaultPrompt;
+
+    private final Map<String, List<Map<String, String>>> conversations = new HashMap<>();
+
+    public String chatWithGPT(String conversationId, String message, String model) {
+        List<Map<String, String>> conversation = conversations.computeIfAbsent(conversationId, k -> {
+            List<Map<String, String>> newConversation = new ArrayList<>();
+            newConversation.add(Map.of("role", "system", "content", defaultPrompt));
+            return newConversation;
+        });
+
+        conversation.add(Map.of("role", "user", "content", message));
+
+        String gptResponse = getResponse(conversation, model != null ? model : defaultModel);
+        conversation.add(Map.of("role", "assistant", "content", gptResponse));
+
+        return gptResponse;
+    }
+
+    public String getResponse(List<Map<String, String>> messages, String model) {
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Content-Type", "application/json");
-        headers.add("Authorization", "Bearer " + apiKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
 
-        // Cuerpo de la solicitud JSON
-        String requestBody = "{\n" +
-                "  \"model\": \"" + model + "\",\n" +
-                "  \"messages\": [{\"role\": \"user\", \"content\": \"" + prompt + "\"}],\n" +
-                "  \"max_tokens\": 100\n" +
-                "}";
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("model", model);
+        requestBody.put("messages", messages);
 
-        // Crear la entidad HTTP con el cuerpo de la solicitud y los encabezados
-        HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
-        // Realizar la solicitud
         try {
-            ResponseEntity<String> response = restTemplate.postForEntity(apiUrl, entity, String.class);
-            return response.getBody();
+            String jsonResponse = restTemplate.postForObject(apiUrl, request, String.class);
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode rootNode = objectMapper.readTree(jsonResponse);
+            return rootNode.path("choices").get(0).path("message").path("content").asText();
         } catch (Exception e) {
             e.printStackTrace();
-            return "Error: " + e.getMessage();
+            return "Error generando respuesta: " + e.getMessage();
         }
+    }
+
+    public void clearConversation(String conversationId) {
+        conversations.remove(conversationId);
+    }
+
+    //obtener una respuesta simple sin gestión de conversación
+    public String getSimpleResponse(String prompt) {
+        List<Map<String, String>> messages = new ArrayList<>();
+        messages.add(Map.of("role", "user", "content", prompt));
+        return getResponse(messages, defaultModel);
     }
 }

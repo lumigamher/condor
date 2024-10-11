@@ -8,4 +8,4 @@ public class CondorApplication {
     public static void main(String[] args) {
         SpringApplication.run(CondorApplication.class, args);
     }
-}
+}                                                               

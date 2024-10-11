@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/chat")
 @RequiredArgsConstructor
-public class ChatController {
+public class OpenAIController {
 
     private final ChatService chatService;
 
@@ -21,5 +21,17 @@ public class ChatController {
     @GetMapping("/history")
     public ResponseEntity<?> getChatHistory() {
         return chatService.getChatHistory();
+    }
+
+    @DeleteMapping("/clear/{conversationId}")
+    public ResponseEntity<?> clearConversation(@PathVariable String conversationId) {
+        return chatService.clearConversation(conversationId);
+    }
+
+    @PostMapping("/new")
+    public ResponseEntity<?> startNewConversation() {
+        // Este método podría simplemente devolver un nuevo conversationId
+        String newConversationId = java.util.UUID.randomUUID().toString();
+        return ResponseEntity.ok(newConversationId);
     }
 }

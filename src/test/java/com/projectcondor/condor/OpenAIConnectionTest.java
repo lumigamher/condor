@@ -1,12 +1,13 @@
 package com.projectcondor.condor;
 
-import com.projectcondor.condor.service.OpenAIService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
+
+import com.projectcondor.condor.service.OpenAIService;
 
 @SpringBootApplication
 public class OpenAIConnectionTest {
@@ -23,8 +24,8 @@ public class OpenAIConnectionTest {
     CommandLineRunner testOpenAIConnection() {
         return args -> {
             System.out.println("Probando conexión con OpenAI API...");
-            String prompt = "Hola, ¿puedes decirme qué día es hoy?";
-            String response = openAIService.getResponse(prompt);
+            String prompt = "Hola, no me siento bien";
+            String response = openAIService.getSimpleResponse(prompt);
             System.out.println("Respuesta de OpenAI: " + response);
             System.out.println("Prueba completada.");
             System.exit(0);

@@ -12,7 +12,7 @@ public class OpenAIConfig {
     private String openaiApiKey;
 
     @Bean
-    RestTemplate restTemplate() {
+    RestTemplate restTemplate() throws Exception {
         RestTemplate restTemplate = new RestTemplate();
         restTemplate.getInterceptors().add((request, body, execution) -> {
             request.getHeaders().add("Authorization", "Bearer " + openaiApiKey);  // Agregar solo el encabezado de la API Key

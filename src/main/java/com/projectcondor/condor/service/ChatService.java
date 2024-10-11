@@ -4,6 +4,7 @@ import com.projectcondor.condor.model.Message;
 import com.projectcondor.condor.model.User;
 import com.projectcondor.condor.repository.MessageRepository;
 import com.projectcondor.condor.repository.UserRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -30,12 +32,20 @@ public class ChatService {
         message.setFromAI(false);
         messageRepository.save(message);
 
-        String aiResponse = openAIService.getResponse(message.getContent());
+        String conversationId = message.getConversationId();
+        if (conversationId == null) {
+            conversationId = UUID.randomUUID().toString();
+            message.setConversationId(conversationId);
+        }
+
+        String aiResponse = openAIService.chatWithGPT(conversationId, message.getContent(), null);
+
         Message aiMessage = new Message();
         aiMessage.setUser(user);
         aiMessage.setContent(aiResponse);
         aiMessage.setTimestamp(LocalDateTime.now());
         aiMessage.setFromAI(true);
+        aiMessage.setConversationId(conversationId);
         messageRepository.save(aiMessage);
 
         return ResponseEntity.ok(aiMessage);
@@ -48,5 +58,10 @@ public class ChatService {
 
         List<Message> messages = messageRepository.findByUserOrderByTimestampAsc(user);
         return ResponseEntity.ok(messages);
+    }
+
+    public ResponseEntity<?> clearConversation(String conversationId) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'clearConversation'");
     }
 }
