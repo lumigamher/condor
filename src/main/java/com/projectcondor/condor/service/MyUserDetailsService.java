@@ -1,5 +1,10 @@
 package com.projectcondor.condor.service;
 
+import java.util.ArrayList;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -12,6 +17,7 @@ import com.projectcondor.condor.repository.UserRepository;
 public class MyUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private static final Logger logger = LoggerFactory.getLogger(MyUserDetailsService.class);
 
     public MyUserDetailsService(UserRepository userRepository) {
         this.userRepository = userRepository;
@@ -23,7 +29,11 @@ public class MyUserDetailsService implements UserDetailsService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
 
-        // Devuelve una implementación de UserDetails (puedes usar tu propia clase UserDetails si la tienes)
-        return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(), user.getAuthorities());
+        // Log para verificar si el usuario ha sido encontrado
+        logger.info("User found in the database: {}", user.getUsername());
+
+        // Devuelve una implementación de UserDetails
+        return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(), new ArrayList<>()); // Lista vacía de authorities
     }
 }
+
