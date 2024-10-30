@@ -19,10 +19,26 @@ spring.datasource.username=root
 spring.datasource.password=contraseña
 spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 
-# Configuración de JPA
+# Configuración de JPA e Hibernate
 spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL5Dialect
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+
+# Configuración de JWT
+jwt.secret=${JWT_SECRET}
+jwt.expiration=86400000
+
+# Configuración de OpenAI
+openai.api.url=${API_URL}
+openai.api.key=${OPENAI_API_KEY}
+openai.model=chatgpt-4o-latest
+openai.account=app-msj
+openai.default.prompt=prompt por defecto
+
+# Configuración de perfiles activos
+spring.profiles.active=conversation-test  
+
+# Nivel de logging
+logging.level.com.projectcondor.condor.service=DEBUG
 ```
 
 ## Cómo Correr el Proyecto
@@ -301,17 +317,3 @@ La API utiliza autenticación basada en JWT. Todos los endpoints (excepto `/auth
 - Los timestamps están en formato ISO 8601 (UTC).
 - Los datos en la base de datos se actualizarán automáticamente con `spring.jpa.hibernate.ddl-auto=update`, pero para producción se recomienda cambiar a `validate`.
 
----
-
-## Contacto
-
-Si tienes dudas o encuentras errores, contacta con el equipo de desarrollo.
-
----
-
-Este documento describe los aspectos clave de la API de chat y debería ser útil tanto para desarrolladores frontend como para aquellos que trabajen en la integración de esta API.
-```
-
----
-
-Este archivo `README.md` proporciona una referencia completa y detallada de la API desarrollada en Spring Boot, con ejemplos específicos para cada endpoint, cómo configurar la base de datos, manejar autenticación y ejecutar solicitudes de prueba.
