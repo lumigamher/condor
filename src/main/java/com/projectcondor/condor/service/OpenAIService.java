@@ -2,69 +2,62 @@ package com.projectcondor.condor.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.RequiredArgsConstructor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import java.time.Duration;
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class OpenAIService {
     private static final Logger logger = LoggerFactory.getLogger(OpenAIService.class);
-    
-    private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
 
+    private final RestTemplate restTemplate;
+    
     @Value("${openai.api.url}")
     private String apiUrl;
-
-    @Value("${openai.api.key}")
-    private String apiKey;
 
     @Value("${openai.model}")
     private String defaultModel;
 
+    @Value("${openai.default.prompt}")
+    private String defaultPrompt;
+
     private final Map<String, List<Map<String, String>>> conversations = new HashMap<>();
 
-    public OpenAIService(RestTemplateBuilder restTemplateBuilder) {
-        this.restTemplate = restTemplateBuilder
-            .setConnectTimeout(Duration.ofSeconds(10))
-            .setReadTimeout(Duration.ofSeconds(10))
-            .build();
-        this.objectMapper = new ObjectMapper();
-    }
-
     public String chatWithGPT(String conversationId, String message, String model) {
-        logger.info("Iniciando solicitud a OpenAI para conversación: {}", conversationId);
-        
         try {
             List<Map<String, String>> conversation = conversations.computeIfAbsent(
                 conversationId,
                 k -> new ArrayList<>(Collections.singletonList(
-                    Map.of("role", "system", "content", "Eres un asistente amigable.")
+                    Map.of("role", "system", "content", defaultPrompt)
                 ))
             );
 
+            // Si es una nueva conversación, verificar que el prompt esté presente
+            if (conversation.size() == 1) {
+                logger.info("Iniciando nueva conversación con prompt: {}", defaultPrompt);
+            }
+
+            // Agregar el mensaje del usuario
             conversation.add(Map.of("role", "user", "content", message));
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("Authorization", "Bearer " + apiKey);
 
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("model", model != null ? model : defaultModel);
             requestBody.put("messages", conversation);
             requestBody.put("temperature", 0.7);
             requestBody.put("max_tokens", 150);
-            
-            logger.debug("Enviando solicitud a OpenAI: {}", requestBody);
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
-            
             ResponseEntity<String> response = restTemplate.exchange(
                 apiUrl,
                 HttpMethod.POST,
@@ -72,9 +65,8 @@ public class OpenAIService {
                 String.class
             );
 
-            logger.debug("Respuesta recibida de OpenAI: {}", response.getBody());
-
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                ObjectMapper objectMapper = new ObjectMapper();
                 JsonNode rootNode = objectMapper.readTree(response.getBody());
                 String aiResponse = rootNode.path("choices")
                     .get(0)
@@ -82,18 +74,16 @@ public class OpenAIService {
                     .path("content")
                     .asText();
 
+                // Agregar la respuesta a la conversación
                 conversation.add(Map.of("role", "assistant", "content", aiResponse));
-                
-                logger.info("Respuesta procesada exitosamente");
                 return aiResponse;
             } else {
-                logger.error("Error en la respuesta de OpenAI: {}", response.getStatusCode());
-                return "Lo siento, hubo un problema al procesar tu mensaje.";
+                throw new RuntimeException("Error en la respuesta de OpenAI");
             }
-
         } catch (Exception e) {
-            logger.error("Error al procesar mensaje con OpenAI", e);
-            return "Lo siento, ocurrió un error: " + e.getMessage();
+            logger.error("Error procesando mensaje", e);
+            clearConversation(conversationId); // Limpiar conversación en caso de error
+            return "Lo siento, ocurrió un error al procesar tu mensaje. Por favor, intenta nuevamente.";
         }
     }
 
