@@ -13,30 +13,27 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Message {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
     @Column(columnDefinition = "TEXT")
     private String content;
 
-    @Column(nullable = false)
-    private LocalDateTime timestamp;
-
-    @Column(nullable = false)
     private boolean fromAI;
 
     @Column(nullable = false)
     private String conversationId;
 
-    // You might want to add a constructor with essential fields
-    public Message(User user, String content, boolean fromAI, String conversationId) {
-        this.user = user;
+    @Column(nullable = false)
+    private LocalDateTime timestamp = LocalDateTime.now();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    // Constructor para mensajes nuevos
+    public Message(String content, boolean fromAI, String conversationId) {
         this.content = content;
         this.fromAI = fromAI;
         this.conversationId = conversationId;
