@@ -1,319 +1,188 @@
-# Chat con open AI springboot / project CONDOR APP
+# Project Condor - Aplicación de Chat con IA
 
-Esta es la documentación de la API de chat desarrollada en Spring Boot. A continuación se describen los endpoints, la configuración del servidor y cómo realizar solicitudes.
+Aplicación Spring Boot que integra la API de OpenAI para proporcionar una interfaz de chat inteligente con autenticación, mensajería en tiempo real y gestión de conversaciones.
 
-## Requisitos previos
+## Características
 
-- **Java 17** o superior.
-- **Maven** para la gestión de dependencias.
-- **Spring Boot** framework.
+- Autenticación de usuarios con JWT
+- Chat en tiempo real usando WebSocket
+- Integración con modelos GPT de OpenAI
+- Gestión del historial de conversaciones
+- Persistencia de mensajes
+- Soporte CORS
+- Seguridad WebSocket 
 
-## Configuración de la Base de Datos
+## Stack Tecnológico
 
-La API utiliza una base de datos SQL. Asegúrate de configurar la conexión en el archivo `application.properties`.
+- Java 11
+- Spring Boot 2.7.18
+- Spring Security
+- Spring WebSocket
+- Spring Data JPA
+- MySQL 8
+- Autenticación JWT
+- Project Lombok
+- Maven
+
+## Prerrequisitos
+
+- JDK 11 o superior
+- Maven 3.6+
+- MySQL 8.0+
+- Clave API de OpenAI
+
+## Variables de Entorno
 
 ```properties
-# Configuración de base de datos
-spring.datasource.url=jdbc:mysql://localhost:3306/chat_db
-spring.datasource.username=root
-spring.datasource.password=contraseña
-spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+MYSQL_ROOT_PASSWORD=tu_contraseña_mysql
+JWT_SECRET=tu_clave_secreta_jwt
+API_URL=https://api.openai.com/v1/chat/completions
+OPENAIAPI_KEY=tu_clave_api_openai
+PROMPT=tu_prompt_sistema_predeterminado
+```
 
-# Configuración de JPA e Hibernate
+## Esquema de Base de Datos
+
+### Tabla Users
+```sql
+CREATE TABLE user (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
+    first_name VARCHAR(255),
+    last_name VARCHAR(255),
+    phone_number VARCHAR(255),
+    address TEXT,
+    birth_date DATE,
+    gender VARCHAR(50)
+);
+```
+
+### Tabla Messages
+```sql
+CREATE TABLE messages (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    content TEXT,
+    from_ai BOOLEAN,
+    conversation_id VARCHAR(255) NOT NULL,
+    timestamp DATETIME NOT NULL,
+    user_id BIGINT,
+    FOREIGN KEY (user_id) REFERENCES user(id)
+);
+```
+
+## Endpoints de la API
+
+### Autenticación
+- `POST /api/auth/signup`: Registro de nuevo usuario
+- `POST /api/auth/login`: Inicio de sesión
+
+### Operaciones de Chat
+- `POST /api/chat/send`: Enviar mensaje
+- `GET /api/chat/history`: Obtener historial de chat
+- `POST /api/chat/conversation`: Iniciar nueva conversación
+- `DELETE /api/chat/conversation/{conversationId}`: Limpiar conversación
+
+## Endpoints WebSocket
+
+- `ws://localhost:8081/ws`: Endpoint principal WebSocket
+- `/app/chat.send`: Destino para enviar mensajes
+- `/app/chat.connect`: Manejo de conexiones
+- `/user/queue/messages`: Cola de mensajes específica del usuario
+- `/user/queue/errors`: Notificaciones de error
+
+## Seguridad
+
+La aplicación implementa varias medidas de seguridad:
+
+1. Autenticación basada en JWT
+2. Seguridad WebSocket con verificación JWT
+3. Encriptación de contraseñas usando BCrypt
+4. Configuración CORS
+5. Protección contra CSRF
+
+## Instalación
+
+1. Clonar el repositorio:
+```bash
+git clone https://github.com/tu-usuario/condor.git
+```
+
+2. Crear variables de entorno o actualizar `application.properties`
+
+3. Construir el proyecto:
+```bash
+mvn clean install
+```
+
+4. Ejecutar la aplicación:
+```bash
+mvn spring-boot:run
+```
+
+## Pruebas
+
+El proyecto incluye varias clases de prueba:
+- `CondorApplicationTests`: Pruebas básicas de carga de contexto
+- `OpenAIConnectionTest`: Pruebas de conectividad con API OpenAI
+- `OpenAIConversationTester`: Pruebas interactivas de conversación
+
+Ejecutar pruebas:
+```bash
+mvn test
+```
+
+## Ejemplo de Cliente WebSocket
+
+```javascript
+const socket = new SockJS('http://localhost:8081/ws');
+const stompClient = Stomp.over(socket);
+
+stompClient.connect({
+    'Authorization': 'Bearer ' + jwtToken
+}, frame => {
+    console.log('Conectado: ' + frame);
+    stompClient.subscribe('/user/queue/messages', message => {
+        console.log(JSON.parse(message.body));
+    });
+});
+```
+
+## Opciones de Configuración
+
+### Propiedades de la Aplicación
+```properties
+server.port=8081
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+logging.level.com.projectcondor.condor.service=DEBUG
+spring.mvc.async.request-timeout=30000
+```
 
-# Configuración de JWT
-jwt.secret=${JWT_SECRET}
-jwt.expiration=86400000
-
-# Configuración de OpenAI
-openai.api.url=${API_URL}
-openai.api.key=${OPENAI_API_KEY}
+### Configuración OpenAI
+```properties
 openai.model=chatgpt-4o-latest
 openai.account=app-msj
-openai.default.prompt=prompt por defecto
-
-# Configuración de perfiles activos
-spring.profiles.active=conversation-test  
-
-# Nivel de logging
-logging.level.com.projectcondor.condor.service=DEBUG
 ```
 
-## Cómo Correr el Proyecto
+## Manejo de Errores
 
-1. Clona el repositorio.
-2. Configura el archivo `application.properties` con tus credenciales de base de datos.
-3. Corre el proyecto con el siguiente comando:
-   ```bash
-   mvn spring-boot:run
-   ```
-4. La API estará disponible en `http://localhost:8080`.
+La aplicación implementa un manejo integral de errores:
+- Credenciales inválidas
+- Problemas de conexión a base de datos
+- Fallos de API OpenAI
+- Problemas de conexión WebSocket
+- Errores de validación JWT
 
----
+## Contribuir
 
-## Endpoints
+1. Fork del repositorio
+2. Crear rama de característica
+3. Commit de cambios
+4. Push a la rama
+5. Crear Pull Request
 
-### 1. Autenticación
+## Licencia
 
-#### POST `/api/auth/register`
-Registra a un nuevo usuario.
-
-- **Request Body:**
-  ```json
-  {
-    "username": "usuario123",
-    "password": "contraseñaSegura",
-    "email": "correo@example.com"
-  }
-  ```
-
-- **Response:**
-  ```json
-  {
-    "userId": "1",
-    "username": "usuario123",
-    "email": "correo@example.com",
-    "token": "jwt_token_aqui"
-  }
-  ```
-
-#### POST `/api/auth/login`
-Autentica a un usuario y devuelve un token JWT.
-
-- **Request Body:**
-  ```json
-  {
-    "username": "usuario123",
-    "password": "contraseñaSegura"
-  }
-  ```
-
-- **Response:**
-  ```json
-  {
-    "userId": "1",
-    "username": "usuario123",
-    "token": "jwt_token_aqui"
-  }
-  ```
-
----
-
-### 2. Usuarios
-
-#### GET `/api/users/{userId}`
-Obtiene la información de un usuario.
-
-- **Headers:**
-  ```json
-  {
-    "Authorization": "Bearer jwt_token_aqui"
-  }
-  ```
-
-- **Response:**
-  ```json
-  {
-    "userId": "1",
-    "username": "usuario123",
-    "email": "correo@example.com",
-    "createdAt": "2023-01-01T12:00:00Z"
-  }
-  ```
-
-#### PUT `/api/users/{userId}`
-Actualiza la información de un usuario.
-
-- **Headers:**
-  ```json
-  {
-    "Authorization": "Bearer jwt_token_aqui"
-  }
-  ```
-
-- **Request Body:**
-  ```json
-  {
-    "username": "nuevoUsuario",
-    "email": "nuevoCorreo@example.com"
-  }
-  ```
-
-- **Response:**
-  ```json
-  {
-    "userId": "1",
-    "username": "nuevoUsuario",
-    "email": "nuevoCorreo@example.com"
-  }
-  ```
-
----
-
-### 3. Conversaciones
-
-#### GET `/api/conversations`
-Obtiene las conversaciones del usuario autenticado.
-
-- **Headers:**
-  ```json
-  {
-    "Authorization": "Bearer jwt_token_aqui"
-  }
-  ```
-
-- **Response:**
-  ```json
-  [
-    {
-      "conversationId": "123",
-      "participants": ["1", "2"],
-      "lastMessage": {
-        "senderId": "1",
-        "content": "Hola",
-        "timestamp": "2023-01-01T12:00:00Z"
-      }
-    }
-  ]
-  ```
-
-#### POST `/api/conversations`
-Crea una nueva conversación.
-
-- **Headers:**
-  ```json
-  {
-    "Authorization": "Bearer jwt_token_aqui"
-  }
-  ```
-
-- **Request Body:**
-  ```json
-  {
-    "participantId": "2"
-  }
-  ```
-
-- **Response:**
-  ```json
-  {
-    "conversationId": "123",
-    "participants": ["1", "2"]
-  }
-  ```
-
----
-
-### 4. Mensajes
-
-#### GET `/api/conversations/{conversationId}/messages`
-Obtiene los mensajes de una conversación específica.
-
-- **Headers:**
-  ```json
-  {
-    "Authorization": "Bearer jwt_token_aqui"
-  }
-  ```
-
-- **Response:**
-  ```json
-  [
-    {
-      "messageId": "1",
-      "senderId": "1",
-      "content": "Hola",
-      "timestamp": "2023-01-01T12:00:00Z"
-    },
-    {
-      "messageId": "2",
-      "senderId": "2",
-      "content": "Hola, ¿cómo estás?",
-      "timestamp": "2023-01-01T12:01:00Z"
-    }
-  ]
-  ```
-
-#### POST `/api/conversations/{conversationId}/messages`
-Envía un mensaje en una conversación.
-
-- **Headers:**
-  ```json
-  {
-    "Authorization": "Bearer jwt_token_aqui"
-  }
-  ```
-
-- **Request Body:**
-  ```json
-  {
-    "content": "Mensaje de prueba"
-  }
-  ```
-
-- **Response:**
-  ```json
-  {
-    "messageId": "3",
-    "senderId": "1",
-    "content": "Mensaje de prueba",
-    "timestamp": "2023-01-01T12:02:00Z"
-  }
-  ```
-
----
-
-## Ejemplo de Solicitudes con `curl`
-
-### Registro
-```bash
-curl -X POST http://localhost:8080/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"username": "usuario123", "password": "contraseñaSegura", "email": "correo@example.com"}'
-```
-
-### Inicio de Sesión
-```bash
-curl -X POST http://localhost:8080/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username": "usuario123", "password": "contraseñaSegura"}'
-```
-
-### Obtener Conversaciones
-```bash
-curl -X GET http://localhost:8080/api/conversations \
-  -H "Authorization: Bearer jwt_token_aqui"
-```
-
----
-
-## Autenticación
-
-La API utiliza autenticación basada en JWT. Todos los endpoints (excepto `/auth/register` y `/auth/login`) requieren el token JWT en el encabezado de la solicitud.
-
-### Ejemplo de Header de Autenticación
-```json
-{
-  "Authorization": "Bearer jwt_token_aqui"
-}
-```
-
----
-
-## Errores Comunes
-
-- **401 Unauthorized**: El token JWT es inválido o ha expirado.
-- **403 Forbidden**: No tienes permiso para acceder a este recurso.
-- **404 Not Found**: El recurso no fue encontrado.
-- **500 Internal Server Error**: Error en el servidor, revisa los logs para más detalles.
-
----
-
-## Notas
-
-- Asegúrate de almacenar el token de forma segura en el cliente.
-- Los timestamps están en formato ISO 8601 (UTC).
-- Los datos en la base de datos se actualizarán automáticamente con `spring.jpa.hibernate.ddl-auto=update`, pero para producción se recomienda cambiar a `validate`.
-
+Este proyecto está licenciado bajo la Licencia MIT - ver el archivo LICENSE para más detalles.
