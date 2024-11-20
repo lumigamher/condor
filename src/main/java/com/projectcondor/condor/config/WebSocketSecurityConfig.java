@@ -18,10 +18,10 @@ public class WebSocketSecurityConfig implements WebSocketMessageBrokerConfigurer
     private final JwtTokenProvider jwtTokenProvider;
 
     @Override
-    public void configureClientInboundChannel(ChannelRegistration registration) {
+    public void configureClientInboundChannel(@SuppressWarnings("null") ChannelRegistration registration) {
         registration.interceptors(new ChannelInterceptor() {
             @Override
-            public Message<?> preSend(Message<?> message, MessageChannel channel) {
+            public Message<?> preSend(@SuppressWarnings("null") Message<?> message, @SuppressWarnings("null") MessageChannel channel) {
                 StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
                 
                 if (StompCommand.CONNECT.equals(accessor.getCommand())) {
