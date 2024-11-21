@@ -4,9 +4,13 @@ import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import javax.persistence.*;
+
+import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.Date;
+
 
 @Data
 @Entity
@@ -32,15 +36,14 @@ public class User implements UserDetails {
     private String address;
     
     @Column(name = "birth_date")
-    @Temporal(TemporalType.DATE)
-    private Date birthDate;
-    
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
+    private LocalDateTime birthDate;
+
     private String gender;
 
-    // Este método debe devolver los roles o permisos (authorities) del usuario
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Aquí podrías implementar la lógica para devolver los roles o permisos
+        // logica para implentar los roles o permisos cuando se neseciten
         return null;  // Devuelve los authorities como una colección de GrantedAuthority
     }
 
